@@ -1,0 +1,16 @@
+langchain-core
+langchain-text-splitters
+langchain-groq
+langchain-chroma
+langchain-huggingface
+sentence-transformers
+chromadb
+pypdf
+streamlit
+python-dotenv
+
+# Pinned to builds that Windows Smart App Control allows on this machine;
+# the newest wheels of these three are blocked as unsigned/unknown DLLs.
+xxhash==3.6.0
+scikit-learn==1.7.2
+pyarrow==21.0.0
