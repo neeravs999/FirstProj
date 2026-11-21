@@ -13,9 +13,10 @@ def _write(event: dict) -> None:
         f.write(json.dumps(event, ensure_ascii=False) + "\n")
 
 
-def log_answer(question: str, answer: str, source_ids: list[str], channel: str) -> str:
+def log_answer(question: str, answer: str, source_ids: list[str], channel: str,
+               intent: str | None = None) -> str:
     interaction_id = uuid.uuid4().hex
-    _write({"type": "answer", "id": interaction_id, "channel": channel,
+    _write({"type": "answer", "id": interaction_id, "channel": channel, "intent": intent,
             "question": question, "answer": answer, "sources": source_ids})
     return interaction_id
 

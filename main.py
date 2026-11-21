@@ -2,8 +2,10 @@
 import os
 import sys
 
-from chain import answer_stream, friendly_error, source_label
+from assistant import respond
+from chain import friendly_error, source_label
 from interaction_log import log_answer
+from refund_agent import RefundAgent
 from retriever import StoreNotBuiltError
 
 
@@ -13,6 +15,7 @@ def main() -> None:
 
     print("Telecom Support Assistant (type 'quit' to exit)\n")
     history: list[dict] = []
+    agent = RefundAgent()
     while True:
         try:
             question = input("You: ").strip()
@@ -24,24 +27,29 @@ def main() -> None:
             continue
 
         try:
-            docs, stream = answer_stream(question, history)
-            print("Bot: ", end="", flush=True)
-            parts = []
-            for token in stream:
-                print(token, end="", flush=True)
-                parts.append(token)
-            answer = "".join(parts)
+            reply = respond(question, history, agent)
+            if reply.stream is not None:
+                parts = []
+                for i, token in enumerate(reply.stream):
+                    print(("Bot: " if i == 0 else "") + token, end="", flush=True)
+                    parts.append(token)
+                answer = "".join(parts)
+            else:
+                answer = reply.text
+                print(f"Bot: {answer.replace('**', '')}", end="")
         except StoreNotBuiltError as e:
             sys.exit(str(e))
         except Exception as e:
             print(f"\n{friendly_error(e)}\n")
             continue
 
-        print("\n\nSources:")
-        for d in docs:
-            print(f"  - {source_label(d)}")
-        print()
-        log_answer(question, answer, [d.metadata["doc_id"] for d in docs], "cli")
+        if reply.docs:
+            print("\n\nSources:")
+            for d in reply.docs:
+                print(f"  - {source_label(d)}")
+        print("\n")
+        log_answer(question, answer, [d.metadata["doc_id"] for d in reply.docs], "cli",
+                   reply.intent)
         history += [{"role": "user", "content": question}, {"role": "assistant", "content": answer}]
 
     print("Goodbye!")

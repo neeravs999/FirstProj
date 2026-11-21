@@ -23,6 +23,13 @@ copy .env.example .env      # then put your GROQ_API_KEY in .env
 .venv\Scripts\python main.py         # CLI; type quit to exit
 ```
 
+## Refunds (agent_PRD.md)
+
+Each message is classified first. Refund requests go to the Refund Agent, which uses
+the signed-in demo account (`user_123`, with recharges of ₹999 and ₹499). Eligible refunds
+of up to ₹499 need **Confirm Refund**. Larger ones go to the Support Team. Refunds are
+simulated, and the workflow steps are logged to `logs/agent_workflow.log`.
+
 ## Updating knowledge
 
 Edit the files in `data/`, then re-run `ingest_all.py` (or just `ingest_faq.py`,
@@ -34,7 +41,11 @@ To add a new source, write an `ingest_<name>.py` that calls `write_collection("<
 
 | File | Purpose |
 | --- | --- |
-| `config.py` | Paths, model names, top-k, chunk sizes, embeddings |
+| `config.py` | Paths, model names, top-k, chunk sizes, embeddings, refund limits, workflow logging |
+| `assistant.py` | Router: intent detection → RAG or Refund Agent (`agent_PRD.md`) |
+| `intent.py` | Structured LLM classifier: `requirement_inquiry` / `refund_request` |
+| `refund_agent.py` | Tool-using Refund Agent + refund state machine; confirmation and approval limit in code |
+| `refund_tools.py` | Demo account data and the deterministic `get_user_account`, `validate_refund`, `process_refund`, `submit_to_support` |
 | `ingest_*.py` | Build the `faq`, `tickets` and `guides` collections |
 | `retriever.py` | Top-3 per collection, queried in parallel (9 docs) |
 | `chain.py` | Source-labelled prompt → Groq Qwen (temperature 0) → streamed answer |

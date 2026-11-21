@@ -9,7 +9,7 @@ from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from config import LLM_MODEL
+from config import HISTORY_MESSAGES, LLM_MODEL
 from retriever import retrieve
 
 FALLBACK = (
@@ -94,7 +94,7 @@ def get_chain():
 def to_messages(history: list[dict]) -> list:
     """Convert [{'role': 'user'|'assistant', 'content': str}] into LangChain messages."""
     cls = {"user": HumanMessage, "assistant": AIMessage}
-    return [cls[m["role"]](content=m["content"]) for m in history[-6:]]
+    return [cls[m["role"]](content=m["content"]) for m in history[-HISTORY_MESSAGES:]]
 
 
 def answer_stream(question: str, history: list[dict] | None = None) -> tuple[list[Document], Iterator[str]]:
