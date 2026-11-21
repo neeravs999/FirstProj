@@ -1,0 +1,19 @@
+[client]
+toolbarMode = "minimal"        # hide the Deploy button and developer menu
+
+[theme]
+primaryColor = "#4F46E5"       # indigo: buttons, links, focus
+baseRadius = "large"
+buttonRadius = "full"
+font = "sans-serif"
+showSidebarBorder = true
+
+[theme.light]
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F4F5FB"
+textColor = "#1E1F2B"
+
+[theme.dark]
+backgroundColor = "#0F1117"
+secondaryBackgroundColor = "#1A1C26"
+textColor = "#E8E9F0"
