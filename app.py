@@ -37,8 +37,55 @@ st.html("""
   .hero h1 { font-size:1.75rem; line-height:1.2; margin:0; padding:0; }
   .hero p  { margin:2px 0 0; opacity:.7; font-size:.95rem; }
   .welcome { opacity:.75; margin:8px 0 4px; }
-  [data-testid="stSidebar"] .stButton button { justify-content:flex-start; text-align:left; }
   [data-testid="stChatMessage"] { padding:.6rem .4rem; }
+
+  /* ---- sidebar ---- */
+  [data-testid="stSidebar"] {
+    background: linear-gradient(180deg, rgba(79,70,229,.14) 0%, rgba(6,182,212,.07) 45%,
+                rgba(79,70,229,.04) 100%); }
+  [data-testid="stSidebar"] [data-testid="stBaseButton-tertiary"] { justify-content:flex-start;
+    text-align:left; padding:6px 8px; border-radius:10px; }
+  [data-testid="stSidebar"] [data-testid="stBaseButton-tertiary"] > div,
+  [data-testid="stSidebar"] [data-testid="stBaseButton-tertiary"] > div > span {
+    justify-content:flex-start !important; text-align:left; }
+  [data-testid="stSidebar"] [data-testid="stBaseButton-tertiary"]:hover { background:rgba(79,70,229,.12); }
+  [data-testid="stSidebar"] [data-testid="stExpander"] details {
+    border-radius:14px; border:1px solid rgba(79,70,229,.25); background:rgba(127,127,127,.04); }
+  .sb-brand { display:flex; align-items:center; gap:10px; margin:-8px 0 14px; }
+  .sb-logo { width:38px; height:38px; border-radius:12px; display:grid; place-items:center;
+             font-size:20px; background:linear-gradient(135deg,#4F46E5,#06B6D4);
+             box-shadow:0 4px 14px rgba(79,70,229,.35); }
+  .sb-brand b { font-size:1.05rem; display:block; line-height:1.2; }
+  .sb-status { font-size:.78rem; opacity:.75; }
+  .sb-dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:#22C55E;
+            margin-right:5px; box-shadow:0 0 0 3px rgba(34,197,94,.2); }
+  .sb-label { font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+              opacity:.6; margin:14px 0 6px; }
+  .acct { border-radius:18px; padding:14px; color:#fff;
+          background:linear-gradient(135deg,#4F46E5 0%,#7C3AED 60%,#06B6D4 130%);
+          box-shadow:0 8px 24px rgba(79,70,229,.30); }
+  .acct-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .acct-av { width:40px; height:40px; border-radius:50%; display:grid; place-items:center;
+             font-weight:700; font-size:1.1rem; background:rgba(255,255,255,.22);
+             border:2px solid rgba(255,255,255,.45); }
+  .acct-name { font-weight:700; font-size:1rem; line-height:1.2; }
+  .acct-sub { font-size:.76rem; opacity:.85; }
+  .acct-stats { display:flex; gap:8px; margin-bottom:10px; }
+  .acct-stat { flex:1; background:rgba(255,255,255,.14); border-radius:12px; padding:6px 8px; }
+  .acct-stat b { display:block; font-size:1.05rem; }
+  .acct-stat span { font-size:.68rem; opacity:.85; text-transform:uppercase; letter-spacing:.05em; }
+  .rc { display:flex; align-items:center; justify-content:space-between; gap:8px;
+        background:rgba(255,255,255,.12); border-radius:12px; padding:8px 10px; margin-top:6px; }
+  .rc-amt { font-weight:700; }
+  .rc-meta { font-size:.72rem; opacity:.8; }
+  .pill { font-size:.7rem; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+  .pill.ok   { background:#DCFCE7; color:#166534; }
+  .pill.done { background:rgba(255,255,255,.25); color:#fff; }
+  .pill.no   { background:#FFEDD5; color:#9A3412; }
+  .acct-foot { font-size:.7rem; opacity:.75; margin-top:10px; }
+  .help { display:flex; gap:10px; align-items:center; border-radius:14px; padding:10px 12px;
+          border:1px dashed rgba(127,127,127,.4); font-size:.82rem; margin-top:4px; }
+  .help-ic { font-size:1.3rem; }
 </style>
 """)
 
@@ -92,40 +139,68 @@ def render_assistant(msg: dict, is_last: bool) -> None:
 
 
 def render_account() -> None:
-    account = agent.tools.get_user_account(agent.user_id)
-    with st.container(border=True):
-        st.markdown(f"**:material/account_circle: {account['name']}** · {account['plan']} plan")
-        for r in account["recharges"]:
-            left, right = st.columns([1, 1.3], vertical_alignment="center")
-            left.markdown(f"**{rupees(r['recharge_amount'])}**  \n"
-                          f":small[{r['recharge_age_days']} day(s) ago]")
-            with right:
-                if r["refund_status"] == "refunded":
-                    st.badge("Refunded", icon=":material/done_all:", color="gray")
-                elif is_refundable(r):
-                    st.badge("Refundable", icon=":material/check:", color="green")
-                else:
-                    st.badge("Not refundable", icon=":material/block:", color="orange")
-        st.caption("Demo account · refunds are simulated")
+    a = agent.tools.get_user_account(agent.user_id)
+    recharges = a["recharges"]
+    refundable = sum(is_refundable(r) for r in recharges)
+    rows = ""
+    for r in sorted(recharges, key=lambda r: r["recharge_age_days"]):
+        if r["refund_status"] == "refunded":
+            pill = '<span class="pill done">✓ Refunded</span>'
+        elif is_refundable(r):
+            pill = '<span class="pill ok">● Refundable</span>'
+        else:
+            pill = '<span class="pill no">Not eligible</span>'
+        days = r["recharge_age_days"]
+        rows += (f'<div class="rc"><div><div class="rc-amt">{rupees(r["recharge_amount"])}</div>'
+                 f'<div class="rc-meta">{days} day{"s" if days != 1 else ""} ago · '
+                 f'{r["recharge_status"]}</div></div>{pill}</div>')
+    st.html(f"""
+    <div class="acct">
+      <div class="acct-head">
+        <div class="acct-av">{a['name'][0]}</div>
+        <div><div class="acct-name">{a['name']}</div>
+             <div class="acct-sub">{a['plan']} plan · {rupees(a['plan_amount'])}/month</div></div>
+      </div>
+      <div class="acct-stats">
+        <div class="acct-stat"><b>{len(recharges)}</b><span>Recharges</span></div>
+        <div class="acct-stat"><b>{refundable}</b><span>Refundable</span></div>
+      </div>
+      {rows}
+      <div class="acct-foot">🔒 Signed in · demo account, refunds are simulated</div>
+    </div>""")
+
+
+def clear() -> None:                                   # FR-04 / agent_PRD FR-48
+    st.session_state.messages = []
+    agent.reset()                                      # also drops any pending refund
 
 
 with st.sidebar:
-    st.subheader("Your account")
+    st.html("""
+    <div class="sb-brand">
+      <div class="sb-logo">📶</div>
+      <div><b>Telecom Care</b>
+           <span class="sb-status"><span class="sb-dot"></span>Assistant online · 24×7</span></div>
+    </div>""")
+    st.html('<div class="sb-label">Your account</div>')
     render_account()
-    with st.expander("Sample questions", icon=":material/help:"):
+
+    st.html('<div class="sb-label">Quick start</div>')
+    with st.expander("Common questions", icon=":material/lightbulb:"):
         for q in SAMPLE_QUESTIONS:
-            st.button(q, width="stretch", on_click=ask, args=(q,), type="tertiary")
-    with st.expander("Try a refund", icon=":material/currency_rupee:"):
+            st.button(q, width="stretch", on_click=ask, args=(q,), type="tertiary",
+                      icon=":material/chat_bubble:")
+    with st.expander("Refund demos", icon=":material/currency_rupee:"):
         for q in SAMPLE_REFUNDS:
-            st.button(q, width="stretch", on_click=ask, args=(q,), type="tertiary")
-    st.divider()
+            st.button(q, width="stretch", on_click=ask, args=(q,), type="tertiary",
+                      icon=":material/payments:")
 
-    def clear() -> None:                               # FR-04 / agent_PRD FR-48
-        st.session_state.messages = []
-        agent.reset()                                  # also drops any pending refund
-
+    st.html('<div class="sb-label">Conversation</div>')
     st.button("Clear conversation", icon=":material/restart_alt:", width="stretch",
-              on_click=clear)
+              on_click=clear, type="primary")
+    st.html("""
+    <div class="help"><span class="help-ic">☎️</span>
+      <div><b>Need a person?</b><br>Call <b>611</b> or use the MyTelecom app.</div></div>""")
     st.caption("Answers come only from the FAQ, resolved tickets and the telecom guide.")
 
 st.html("""
