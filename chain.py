@@ -1,7 +1,9 @@
 """Answer generation: source-labelled context -> Qwen on Groq -> streamed text."""
+import logging
 from collections.abc import Iterator
 from functools import lru_cache
 
+import groq
 from langchain_core.documents import Document
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
@@ -14,6 +16,27 @@ FALLBACK = (
     "I don't have enough information in my knowledge base to answer that. "
     "Please call 611 or use the MyTelecom app for help."
 )
+
+log = logging.getLogger("telecom_chatbot")
+
+_UNAVAILABLE = ("Sorry, the assistant is unavailable right now. Please try again later, "
+                "or call 611 or use the MyTelecom app for help.")
+
+
+def friendly_error(exc: Exception) -> str:
+    """Turn an LLM/API failure into a customer-safe message.
+
+    The technical detail (status code, Groq's error body) goes to the server log
+    for the operator, never to the customer.
+    """
+    log.error("LLM call failed: %s: %s", type(exc).__name__, exc)
+    if isinstance(exc, groq.RateLimitError):
+        return "The assistant is busy right now. Please wait a moment and try again."
+    if isinstance(exc, (groq.APIConnectionError, groq.APITimeoutError)):
+        return ("I couldn't reach the answer service. Please check your internet "
+                "connection and try again.")
+    # Bad/expired key, retired model, server errors and anything unexpected.
+    return _UNAVAILABLE
 
 SYSTEM_PROMPT = """You are a friendly customer-care assistant for a mobile telecom operator.
 

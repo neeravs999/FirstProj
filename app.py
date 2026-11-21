@@ -3,7 +3,7 @@ import os
 
 import streamlit as st
 
-from chain import answer_stream, source_label
+from chain import answer_stream, friendly_error, source_label
 from interaction_log import log_answer, log_feedback
 from retriever import StoreNotBuiltError
 
@@ -82,7 +82,8 @@ if question:
             st.error(str(e))
             st.stop()
         except Exception as e:  # network / auth / rate-limit errors from Groq
-            st.error(f"Sorry, something went wrong reaching the language model: {e}")
+            st.error(friendly_error(e))  # details go to the server log only
+            st.session_state.messages.pop()  # drop the unanswered question so a retry is clean
             st.stop()
 
     sources = [{"label": source_label(d), "excerpt": d.page_content[:300]} for d in docs]

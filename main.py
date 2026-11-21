@@ -2,7 +2,7 @@
 import os
 import sys
 
-from chain import answer_stream, source_label
+from chain import answer_stream, friendly_error, source_label
 from interaction_log import log_answer
 from retriever import StoreNotBuiltError
 
@@ -34,7 +34,7 @@ def main() -> None:
         except StoreNotBuiltError as e:
             sys.exit(str(e))
         except Exception as e:
-            print(f"\n[error] {e}\n")
+            print(f"\n{friendly_error(e)}\n")
             continue
 
         print("\n\nSources:")
